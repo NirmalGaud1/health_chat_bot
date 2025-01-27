@@ -14,7 +14,7 @@ import json
 # Configure Gemini
 GEMINI_API_KEY = "AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c"  # Your actual API key
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Helper Class for Healthcare Analysis
 class HealthcareAgent:
