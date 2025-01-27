@@ -23,8 +23,8 @@ if not GEMINI_API_KEY:
     st.stop()
 
 # Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
+genai.configure(api_key="AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Helper Class for Healthcare Analysis
 class HealthcareAgent:
