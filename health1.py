@@ -10,21 +10,11 @@ import google.generativeai as genai
 import re
 import time
 import json
-import os
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-# Secure API Key Handling
-GEMINI_API_KEY = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")  # Set this in your environment variables
-if not GEMINI_API_KEY:
-    st.error("API key for Gemini is missing. Please set the GEMINI_API_KEY environment variable.")
-    st.stop()
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
-model = genai.GenerativeModel('gemini-1.5-flash')
+GEMINI_API_KEY = "AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c"  # Your actual API key
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-pro')
 
 # Helper Class for Healthcare Analysis
 class HealthcareAgent:
@@ -42,7 +32,6 @@ class HealthcareAgent:
                 response = model.generate_content(prompt + text)
                 return response.text
             except Exception as e:
-                logging.error(f"Gemini API error on attempt {attempt + 1}: {str(e)}")
                 if attempt < max_retries - 1:
                     time.sleep(2 ** attempt)
                 else:
@@ -84,10 +73,8 @@ class HealthcareAgent:
             response = response.replace("```json", "").replace("```", "").strip()
             return json.loads(response)
         except json.JSONDecodeError:
-            logging.error("Failed to parse JSON from Gemini response.")
             return {"error": "Failed to parse medical analysis"}
         except Exception as e:
-            logging.error(f"Symptom checker error: {str(e)}")
             return {"error": str(e)}
 
     def medication_analyzer(self, medications):
@@ -106,10 +93,8 @@ class HealthcareAgent:
             response = response.replace("```json", "").replace("```", "").strip()
             return json.loads(response)
         except json.JSONDecodeError:
-            logging.error("Failed to parse JSON from Gemini response.")
             return {"error": "Failed to parse medication analysis"}
         except Exception as e:
-            logging.error(f"Medication analyzer error: {str(e)}")
             return {"error": str(e)}
 
 # Streamlit UI
@@ -168,7 +153,6 @@ with tab2:
                         st.json(values)
                         
             except Exception as e:
-                logging.error(f"Error in medical report analysis: {str(e)}")
                 st.error(f"Error: {str(e)}")
 
 # Tab 3: Medication Analysis
@@ -200,4 +184,5 @@ with tab3:
 
 st.divider()
 st.caption("Note: This AI assistant provides informational support only and does not replace professional medical advice.")
+
 
