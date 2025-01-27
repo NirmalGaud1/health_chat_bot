@@ -26,7 +26,7 @@ GEMINI_API_KEY = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable is not set")
 
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key='AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c')
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Helper Class for Healthcare Analysis
@@ -159,20 +159,37 @@ def setup_streamlit_ui():
             agent = HealthcareAgent()
             with st.spinner('Processing report...'):
                 try:
-                    report_data = agent.extract_medical_data(uploaded_file)
-                    analysis = agent.analyze_with_gemini(str(report_data), 
-                        "Analyze this medical report and highlight key findings:")
+                    # Step 1: Extract text from the PDF
+                    reader = PdfReader(uploaded_file)
+                    text = '\n'.join([page.extract_text() for page in reader.pages])
                     
+                    # Debugging: Display raw extracted text
+                    with st.expander("View Raw Extracted Text"):
+                        st.text(text)
+                    
+                    # Step 2: Extract medical data using regex
+                    report_data = agent._process_medical_report(text)
+                    
+                    # Step 3: Analyze the report using Gemini
+                    analysis = agent.analyze_with_gemini(
+                        str(report_data), 
+                        "Analyze this medical report and highlight key findings:"
+                    )
+                    
+                    # Step 4: Display the results
                     st.subheader("Report Summary")
                     st.markdown(analysis)
                     
                     st.subheader("Key Metrics")
-                    for category, values in report_data.items():
-                        with st.expander(category.replace('_', ' ').title()):
-                            st.json(values)
-                            
+                    if report_data:
+                        for category, values in report_data.items():
+                            with st.expander(category.replace('_', ' ').title()):
+                                st.json(values)
+                    else:
+                        st.warning("No key metrics found in the report.")
+                        
                 except Exception as e:
-                    st.error(f"Error: {str(e)}")
+                    st.error(f"Error processing the report: {str(e)}")
 
     # Tab 3: Medication Analysis
     with tab3:
@@ -206,4 +223,3 @@ def setup_streamlit_ui():
 
 if __name__ == "__main__":
     setup_streamlit_ui()
-
