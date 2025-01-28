@@ -7,40 +7,29 @@ import streamlit as st
 import google.generativeai as genai
 from PyPDF2 import PdfReader
 import re
-import os
-import json
 
-# Configure Generative AI API using environment variables
-api_key = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")  # Ensure this is set in your environment
-if not api_key:
-    st.error("GEMINI_API_KEY environment variable is not set. Please configure it.")
-    st.stop()
-
-genai.configure(api_key=api_key)
+# Configure Generative AI API
+genai.configure(api_key="AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")  # Replace with your Gemini API key
 model = genai.GenerativeModel('gemini-pro')
 
-class HealthcareDocProcessor:
+class HealthDocProcessor:
     def __init__(self):
+        # Define key sections for healthcare documents
         self.key_sections = {
-            'confidentiality': ['confidentiality', 'nda'],
-            'data_privacy': ['data privacy', 'HIPAA', 'GDPR'],
-            'payment_terms': ['payment', 'fees', 'remuneration'],
-            'responsibilities': ['responsibility', 'obligations'],
+            'patient_details': ['patient details', 'name', 'age', 'gender'],
+            'medical_conditions': ['medical conditions', 'diagnosis', 'symptoms'],
+            'treatment_plan': ['treatment plan', 'therapy', 'procedures'],
+            'medications': ['medications', 'prescription', 'drugs'],
+            'risks': ['risks', 'complications', 'side effects']
         }
 
     def extract_text(self, uploaded_file):
         """Extract text from uploaded PDF or DOCX file."""
-        try:
-            if uploaded_file.name.endswith('.pdf'):
-                reader = PdfReader(uploaded_file)
-                return '\n'.join([page.extract_text() for page in reader.pages])
-            elif uploaded_file.name.endswith('.docx'):
-                doc = Document(uploaded_file)
-                return '\n'.join([para.text for para in doc.paragraphs])
-            else:
-                raise ValueError("Unsupported file format. Please upload a PDF or DOCX file.")
-        except Exception as e:
-            raise ValueError(f"Error extracting text from file: {str(e)}")
+        if uploaded_file.name.endswith('.pdf'):
+            reader = PdfReader(uploaded_file)
+            return '\n'.join([page.extract_text() for page in reader.pages])
+        else:
+            raise ValueError("Unsupported file format. Please upload a PDF file.")
 
     def find_sections(self, text):
         """Find key sections in the document based on predefined keywords."""
@@ -54,80 +43,77 @@ class HealthcareDocProcessor:
 
     def analyze_with_gemini(self, text, prompt):
         """Analyze text using the Gemini API."""
-        try:
-            response = model.generate_content(prompt + text)
-            return response.text
-        except Exception as e:
-            raise ValueError(f"Error calling Gemini API: {str(e)}")
+        response = model.generate_content(prompt + text)
+        return response.text
 
-class HealthcareAIAgent:
+class HealthAIAgent:
     def __init__(self):
-        self.processor = HealthcareDocProcessor()
+        self.processor = HealthDocProcessor()
     
     def analyze_document(self, uploaded_file):
-        """Analyze the uploaded document and return structured analysis."""
+        """Analyze the uploaded healthcare document and return structured analysis."""
         text = self.processor.extract_text(uploaded_file)
         sections = self.processor.find_sections(text)
         
         analysis = {
             'metadata': self._get_metadata(text),
-            'key_clauses': {},
+            'key_sections': {},
             'risks': self._identify_risks(text)
         }
         
         for section, content in sections.items():
-            analysis['key_clauses'][section] = {
-                'summary': self._summarize_clause(content, section),
-                'obligations': self._extract_obligations(content),
-                'dates': self._extract_dates(content)
+            analysis['key_sections'][section] = {
+                'summary': self._summarize_section(content, section),
+                'details': self._extract_details(content),
+                'actions': self._suggest_actions(content)
             }
         
         return analysis
 
-    def _summarize_clause(self, text, section_name):
-        prompt = f"Summarize this {section_name.replace('_', ' ')} clause in 3 bullet points:\n"
+    def _summarize_section(self, text, section_name):
+        """Summarize a healthcare section."""
+        prompt = f"Summarize this {section_name.replace('_', ' ')} section in 3 bullet points:\n"
         return self.processor.analyze_with_gemini(text, prompt)
 
-    def _extract_obligations(self, text):
-        prompt = "List all party obligations from this clause:\n"
+    def _extract_details(self, text):
+        """Extract detailed information from a section."""
+        prompt = "Extract key details from this section:\n"
         return self.processor.analyze_with_gemini(text, prompt)
 
-    def _extract_dates(self, text):
-        prompt = "Extract all critical dates and deadlines in YYYY-MM-DD format:\n"
+    def _suggest_actions(self, text):
+        """Suggest actions based on the section content."""
+        prompt = "Suggest actions or next steps based on this section:\n"
         return self.processor.analyze_with_gemini(text, prompt)
 
     def _get_metadata(self, text):
+        """Extract metadata from the healthcare document."""
         prompt = """Extract metadata from this healthcare document:
-        - Parties involved
-        - Effective date
-        - Document type
-        - Key stakeholders
+        - Patient name
+        - Date of birth
+        - Medical record number
+        - Document type (e.g., prescription, medical report)
         Format as JSON:"""
-        metadata = self.processor.analyze_with_gemini(text, prompt)
-        try:
-            return json.loads(metadata)  # Parse JSON for better display
-        except json.JSONDecodeError:
-            return metadata  # Return raw text if JSON parsing fails
+        return self.processor.analyze_with_gemini(text, prompt)
 
     def _identify_risks(self, text):
-        prompt = """Identify potential risks in this healthcare document:
-        - Non-compliance with HIPAA/GDPR
-        - Data privacy issues
-        - Ambiguous responsibilities
+        """Identify potential risks in the healthcare document."""
+        prompt = """Identify potential risks or issues in this healthcare document:
+        - Medication side effects
+        - Treatment complications
         - Missing information
         Format as bullet points:"""
         return self.processor.analyze_with_gemini(text, prompt)
 
 # Streamlit UI
-st.set_page_config(page_title="🏥 Healthcare Document Analyzer AI Agent", layout="wide")
+st.set_page_config(page_title="🏥 Health Document Analyzer AI Agent", layout="wide")
 
-st.title("🏥 Healthcare Document Analyzer AI Agent")
-st.write("Upload your healthcare contract or legal document (PDF or Word) for analysis")
+st.title("🏥 Health Document Analyzer AI Agent")
+st.write("Upload your healthcare document (PDF or Word) for analysis")
 
 uploaded_file = st.file_uploader("Choose a file", type=['pdf', 'docx'])
 
 if uploaded_file:
-    agent = HealthcareAIAgent()
+    agent = HealthAIAgent()
     
     with st.spinner('Analyzing document...'):
         try:
@@ -137,21 +123,17 @@ if uploaded_file:
             st.divider()
             
             with st.expander("📋 Document Metadata", expanded=True):
-                metadata = analysis['metadata']
-                if isinstance(metadata, dict):
-                    st.json(metadata)
-                else:
-                    st.write(metadata)  # Display raw text if JSON parsing failed
+                st.write(analysis['metadata'])
             
-            with st.expander("📑 Key Clauses"):
-                for section, content in analysis['key_clauses'].items():
+            with st.expander("📑 Key Sections"):
+                for section, content in analysis['key_sections'].items():
                     st.subheader(f"{section.replace('_', ' ').title()}")
                     st.write("**Summary:**")
                     st.write(content['summary'])
-                    st.write("**Obligations:**")
-                    st.write(content['obligations'])
-                    st.write("**Key Dates:**")
-                    st.write(content['dates'])
+                    st.write("**Details:**")
+                    st.write(content['details'])
+                    st.write("**Suggested Actions:**")
+                    st.write(content['actions'])
                     st.divider()
             
             with st.expander("⚠️ Identified Risks"):
