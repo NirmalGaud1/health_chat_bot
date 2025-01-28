@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
-genai.configure(api_key='AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c')
+genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Helper Class for Healthcare Analysis
