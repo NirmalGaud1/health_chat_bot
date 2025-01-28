@@ -10,7 +10,7 @@ import re
 
 # Configure Generative AI API
 genai.configure(api_key="AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")  # Replace with your Gemini API key
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 class HealthDocProcessor:
     def __init__(self):
