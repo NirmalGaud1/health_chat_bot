@@ -6,10 +6,14 @@
 import streamlit as st
 import google.generativeai as genai
 from PyPDF2 import PdfReader
+from docx import Document
 import re
+import os
+import json
 
-# Configure Generative AI API
-genai.configure(api_key="AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
+# Configure Generative AI API using environment variables
+api_key = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
+genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-pro')
 
 class HealthcareDocProcessor:
@@ -25,6 +29,9 @@ class HealthcareDocProcessor:
         if uploaded_file.name.endswith('.pdf'):
             reader = PdfReader(uploaded_file)
             return '\n'.join([page.extract_text() for page in reader.pages])
+        elif uploaded_file.name.endswith('.docx'):
+            doc = Document(uploaded_file)
+            return '\n'.join([para.text for para in doc.paragraphs])
         else:
             raise ValueError("Unsupported file format")
 
@@ -115,7 +122,7 @@ if uploaded_file:
             with st.expander("📋 Document Metadata", expanded=True):
                 metadata = analysis['metadata']
                 try:
-                    st.json(eval(metadata))  # Safely parse and display JSON
+                    st.json(json.loads(metadata))  # Safely parse and display JSON
                 except Exception as e:
                     st.error(f"Error parsing metadata JSON: {str(e)}\nRaw Output: {metadata}")
             
@@ -135,4 +142,5 @@ if uploaded_file:
         
         except Exception as e:
             st.error(f"Error processing document: {str(e)}")
+
 
