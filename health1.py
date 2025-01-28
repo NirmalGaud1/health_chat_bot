@@ -12,10 +12,6 @@ from typing import Dict, List, Any
 import streamlit as st
 from PyPDF2 import PdfReader
 import google.generativeai as genai
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
