@@ -8,17 +8,17 @@ import google.generativeai as genai
 from PyPDF2 import PdfReader
 import re
 
+# Configure Generative AI API
 genai.configure(api_key="AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
 model = genai.GenerativeModel('gemini-pro')
 
 class HealthcareDocProcessor:
     def __init__(self):
         self.key_sections = {
-            'compliance': ['compliance', 'regulation'],
-            'liability': ['liability', 'responsibility'],
-            'patient_data': ['patient data', 'confidentiality'],
-            'payment_terms': ['payment', 'fees'],
-            'termination': ['termination', 'expiry'],
+            'confidentiality': ['confidentiality', 'nda'],
+            'data_privacy': ['data privacy', 'HIPAA', 'GDPR'],
+            'payment_terms': ['payment', 'fees', 'remuneration'],
+            'responsibilities': ['responsibility', 'obligations'],
         }
 
     def extract_text(self, uploaded_file):
@@ -58,7 +58,7 @@ class HealthcareAIAgent:
         for section, content in sections.items():
             analysis['key_clauses'][section] = {
                 'summary': self._summarize_clause(content, section),
-                'compliance_issues': self._extract_compliance_issues(content),
+                'obligations': self._extract_obligations(content),
                 'dates': self._extract_dates(content)
             }
         
@@ -68,8 +68,8 @@ class HealthcareAIAgent:
         prompt = f"Summarize this {section_name.replace('_', ' ')} clause in 3 bullet points:\n"
         return self.processor.analyze_with_gemini(text, prompt)
 
-    def _extract_compliance_issues(self, text):
-        prompt = "Identify compliance-related issues or gaps from this legal clause:\n"
+    def _extract_obligations(self, text):
+        prompt = "List all party obligations from this clause:\n"
         return self.processor.analyze_with_gemini(text, prompt)
 
     def _extract_dates(self, text):
@@ -78,22 +78,24 @@ class HealthcareAIAgent:
 
     def _get_metadata(self, text):
         prompt = """Extract metadata from this healthcare document:
-        - Involved parties
+        - Parties involved
         - Effective date
         - Document type
-        - Regulatory references
+        - Key stakeholders
         Format as JSON:"""
         return self.processor.analyze_with_gemini(text, prompt)
 
     def _identify_risks(self, text):
-        prompt = """Identify potential risks in this document:
-        - Non-compliance issues
-        - Data privacy concerns
+        prompt = """Identify potential risks in this healthcare document:
+        - Non-compliance with HIPAA/GDPR
+        - Data privacy issues
         - Ambiguous responsibilities
+        - Missing information
         Format as bullet points:"""
         return self.processor.analyze_with_gemini(text, prompt)
 
-st.set_page_config(page_title="Healthcare Document AI Analyzer", layout="wide")
+# Streamlit UI
+st.set_page_config(page_title="🏥 Healthcare Document Analyzer AI Agent", layout="wide")
 
 st.title("🏥 Healthcare Document Analyzer AI Agent")
 st.write("Upload your healthcare contract or legal document (PDF or Word) for analysis")
@@ -111,15 +113,19 @@ if uploaded_file:
             st.divider()
             
             with st.expander("📋 Document Metadata", expanded=True):
-                st.json(analysis['metadata'])
+                metadata = analysis['metadata']
+                try:
+                    st.json(eval(metadata))  # Safely parse and display JSON
+                except Exception as e:
+                    st.error(f"Error parsing metadata JSON: {str(e)}\nRaw Output: {metadata}")
             
             with st.expander("📑 Key Clauses"):
                 for section, content in analysis['key_clauses'].items():
-                    st.subheader(f"{section.replace('_', ' ').title()} Clause")
+                    st.subheader(f"{section.replace('_', ' ').title()}")
                     st.write("**Summary:**")
                     st.write(content['summary'])
-                    st.write("**Compliance Issues:**")
-                    st.write(content['compliance_issues'])
+                    st.write("**Obligations:**")
+                    st.write(content['obligations'])
                     st.write("**Key Dates:**")
                     st.write(content['dates'])
                     st.divider()
