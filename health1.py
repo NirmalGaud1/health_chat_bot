@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 # Load environment variables
 try:
     load_dotenv()
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    GEMINI_API_KEY = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
     if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY environment variable is not set in the .env file.")
 except Exception as e:
@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key='AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c')
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 # Helper Class for Healthcare Analysis
