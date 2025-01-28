@@ -11,7 +11,11 @@ import os
 import json
 
 # Configure Generative AI API using environment variables
-api_key = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
+api_key = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")  # Ensure this is set in your environment
+if not api_key:
+    st.error("GEMINI_API_KEY environment variable is not set. Please configure it.")
+    st.stop()
+
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-pro')
 
@@ -25,13 +29,21 @@ class HealthcareDocProcessor:
         }
 
     def extract_text(self, uploaded_file):
-        if uploaded_file.name.endswith('.pdf'):
-            reader = PdfReader(uploaded_file)
-            return '\n'.join([page.extract_text() for page in reader.pages])
-        else:
-            raise ValueError("Unsupported file format")
+        """Extract text from uploaded PDF or DOCX file."""
+        try:
+            if uploaded_file.name.endswith('.pdf'):
+                reader = PdfReader(uploaded_file)
+                return '\n'.join([page.extract_text() for page in reader.pages])
+            elif uploaded_file.name.endswith('.docx'):
+                doc = Document(uploaded_file)
+                return '\n'.join([para.text for para in doc.paragraphs])
+            else:
+                raise ValueError("Unsupported file format. Please upload a PDF or DOCX file.")
+        except Exception as e:
+            raise ValueError(f"Error extracting text from file: {str(e)}")
 
     def find_sections(self, text):
+        """Find key sections in the document based on predefined keywords."""
         results = {}
         for section, keywords in self.key_sections.items():
             pattern = r'(?i)({}).*?(?=\n\s*\n|$)'.format('|'.join(keywords))
@@ -41,14 +53,19 @@ class HealthcareDocProcessor:
         return results
 
     def analyze_with_gemini(self, text, prompt):
-        response = model.generate_content(prompt + text)
-        return response.text
+        """Analyze text using the Gemini API."""
+        try:
+            response = model.generate_content(prompt + text)
+            return response.text
+        except Exception as e:
+            raise ValueError(f"Error calling Gemini API: {str(e)}")
 
 class HealthcareAIAgent:
     def __init__(self):
         self.processor = HealthcareDocProcessor()
     
     def analyze_document(self, uploaded_file):
+        """Analyze the uploaded document and return structured analysis."""
         text = self.processor.extract_text(uploaded_file)
         sections = self.processor.find_sections(text)
         
@@ -86,7 +103,11 @@ class HealthcareAIAgent:
         - Document type
         - Key stakeholders
         Format as JSON:"""
-        return self.processor.analyze_with_gemini(text, prompt)
+        metadata = self.processor.analyze_with_gemini(text, prompt)
+        try:
+            return json.loads(metadata)  # Parse JSON for better display
+        except json.JSONDecodeError:
+            return metadata  # Return raw text if JSON parsing fails
 
     def _identify_risks(self, text):
         prompt = """Identify potential risks in this healthcare document:
@@ -117,10 +138,10 @@ if uploaded_file:
             
             with st.expander("📋 Document Metadata", expanded=True):
                 metadata = analysis['metadata']
-                try:
-                    st.json(json.loads(metadata))  # Safely parse and display JSON
-                except Exception as e:
-                    st.error(f"Error parsing metadata JSON: {str(e)}\nRaw Output: {metadata}")
+                if isinstance(metadata, dict):
+                    st.json(metadata)
+                else:
+                    st.write(metadata)  # Display raw text if JSON parsing failed
             
             with st.expander("📑 Key Clauses"):
                 for section, content in analysis['key_clauses'].items():
@@ -138,5 +159,4 @@ if uploaded_file:
         
         except Exception as e:
             st.error(f"Error processing document: {str(e)}")
-
 
