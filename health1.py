@@ -108,7 +108,7 @@ class HealthAIAgent:
 st.set_page_config(page_title="🏥 Health Document Analyzer AI Agent", layout="wide")
 
 st.title("🏥 Health Document Analyzer AI Agent")
-st.write("Upload your healthcare document (PDF or Word) for analysis")
+st.write("Upload your healthcare document (PDF) for analysis")
 
 uploaded_file = st.file_uploader("Choose a file", type=['pdf', 'docx'])
 
