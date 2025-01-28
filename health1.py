@@ -13,10 +13,6 @@ import streamlit as st
 from PyPDF2 import PdfReader
 import google.generativeai as genai
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Configure Gemini API
 GEMINI_API_KEY = os.getenv("AIzaSyA-9-lTQTWdNM43YdOXMQwGKDy0SrMwo6c")
 if not GEMINI_API_KEY:
