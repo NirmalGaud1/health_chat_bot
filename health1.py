@@ -16,17 +16,20 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+try:
+    load_dotenv()
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY environment variable is not set in the .env file.")
+except Exception as e:
+    logging.error(f"Error loading environment variables: {e}")
+    raise
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable is not set")
-
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
